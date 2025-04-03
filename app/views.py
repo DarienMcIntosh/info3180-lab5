@@ -5,18 +5,67 @@ Werkzeug Documentation:  https://werkzeug.palletsprojects.com/
 This file creates your application.
 """
 
-from app import app
+from app import app, db
 from flask import render_template, request, jsonify, send_file
+from werkzeug.utils import secure_filename
 import os
+from app.models import Movie
+from app.forms import MovieForm
 
 
 ###
 # Routing for your application.
 ###
+@app.route('/api/v1/movies', methods=['POST'])
+def movies():
+    # Check if the request is a POST request
+    if request.method == 'POST':
+        # Initialize the form with the request data
+        form = MovieForm()
+        
+        # Validate the form data
+        if form.validate_on_submit():
+            # Get the file from the form
+            poster = form.poster.data
+            
+            filename = secure_filename(poster.filename)
+            
+            # Save the file to the upload folder
+            poster_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            poster.save(poster_path)
+            
+            # Create a new movie instance
+            new_movie = Movie(
+                title=form.title.data,
+                description=form.description.data,
+                poster=filename
+            )
+            
+            # Add the new movie to the database
+            db.session.add(new_movie)
+            db.session.commit()
+            
+            # Return success message
+            return jsonify({
+                "message": "Movie Successfully added",
+                "title": new_movie.title,
+                "poster": new_movie.poster,
+                "description": new_movie.description
+            })
+        else:
+            # Return validation errors
+            return jsonify({
+                "errors": form_errors(form)
+            }), 400
+    
+    # If the request is not a POST request, return method not allowed
+    return jsonify({"error": "Method Not Allowed"}), 405
 
+"""
 @app.route('/')
 def index():
     return jsonify(message="This is the beginning of our API")
+"""
 
 
 ###
