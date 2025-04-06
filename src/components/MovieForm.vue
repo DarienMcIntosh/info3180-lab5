@@ -120,3 +120,17 @@ const saveMovie = () => {
 };
 </script>
 
+<style scoped>
+.container{
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: 20px;
+  border: 2px #007bff;
+  box-shadow: 0 0 3px 3px #007bff2e;
+}
+
+h2{
+  text-align: center;
+}
+
+</style>

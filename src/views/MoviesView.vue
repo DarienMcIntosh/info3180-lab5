@@ -17,7 +17,12 @@
       <div v-else class="row row-cols-1 row-cols-md-3 g-4">
         <div v-for="movie in movies" :key="movie.id" class="col">
           <div class="card h-100">
-            <img :src="movie.poster" class="card-img-top" :alt="movie.title">
+            <!-- Apply the 'movie-poster' class to the img tag -->
+            <img 
+              :src="movie.poster" 
+              class="card-img-top movie-poster" 
+              :alt="movie.title"
+            >
             <div class="card-body">
               <h5 class="card-title">{{ movie.title }}</h5>
               <p class="card-text">{{ movie.description }}</p>
@@ -58,3 +63,12 @@
     fetchMovies();
   });
   </script>
+
+<style scoped>
+.movie-poster {
+  width: 100%; /* Ensure the image spans the full width of its container */
+  height: 200px; /* Set a fixed height for all images */
+  object-fit: cover; /* Scale and crop the image to fill the container while maintaining aspect ratio */
+  object-position: center; /* Center the image within the container */
+}
+</style>
