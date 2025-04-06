@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 import os
 from app.models import Movie
 from app.forms import MovieForm
+from flask_wtf.csrf import generate_csrf
 
 
 ###
@@ -18,6 +19,11 @@ from app.forms import MovieForm
 ###
 @app.route('/api/v1/movies', methods=['POST'])
 def movies():
+    """
+    Handles POST requests to add a new movie to the database.
+    Validates the form data, saves the uploaded poster file, and adds the movie details to the database.
+    Returns a JSON response indicating success or failure.
+    """
     # Check if the request is a POST request
     if request.method == 'POST':
         # Initialize the form with the request data
@@ -25,33 +31,42 @@ def movies():
         
         # Validate the form data
         if form.validate_on_submit():
-            # Get the file from the form
-            poster = form.poster.data
+            try:
+                # Get the file from the form
+                poster = form.poster.data
+                filename = secure_filename(poster.filename)
+
+                # Ensure the upload folder exists
+                app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+                os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+                
+                # Save the file to the upload folder
+                poster_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                poster.save(poster_path)
+                
+                # Create a new movie instance
+                new_movie = Movie(
+                    title=form.title.data,
+                    description=form.description.data,
+                    poster=filename
+                )
+                
+                # Add the new movie to the database
+                db.session.add(new_movie)
+                db.session.commit()
+                
+                # Return success message
+                return jsonify({
+                    "message": "Movie Successfully added",
+                    "title": new_movie.title,
+                    "poster": new_movie.poster,
+                    "description": new_movie.description
+                }), 201
+        
+            except Exception as e:
+                # Handle unexpected errors
+                return jsonify({"error": "An error occurred while processing the request."}), 500
             
-            filename = secure_filename(poster.filename)
-            
-            # Save the file to the upload folder
-            poster_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            poster.save(poster_path)
-            
-            # Create a new movie instance
-            new_movie = Movie(
-                title=form.title.data,
-                description=form.description.data,
-                poster=filename
-            )
-            
-            # Add the new movie to the database
-            db.session.add(new_movie)
-            db.session.commit()
-            
-            # Return success message
-            return jsonify({
-                "message": "Movie Successfully added",
-                "title": new_movie.title,
-                "poster": new_movie.poster,
-                "description": new_movie.description
-            })
         else:
             # Return validation errors
             return jsonify({
@@ -61,11 +76,19 @@ def movies():
     # If the request is not a POST request, return method not allowed
     return jsonify({"error": "Method Not Allowed"}), 405
 
-"""
+
+
+#CSRF token endpoint
+@app.route('/api/v1/csrf-token', methods=['GET'])
+def get_csrf():
+    return jsonify({'csrf_token': generate_csrf()})
+
+
 @app.route('/')
 def index():
-    return jsonify(message="This is the beginning of our API")
-"""
+    return render_template('index.html')
+
+
 
 
 ###
@@ -108,5 +131,8 @@ def add_header(response):
 
 @app.errorhandler(404)
 def page_not_found(error):
-    """Custom 404 page."""
-    return render_template('404.html'), 404
+    return jsonify({"error": "Page not found"}), 404
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return jsonify({"error": "Internal server error"}), 500

@@ -1,8 +1,5 @@
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from app import db
-
-db = SQLAlchemy()
 
 class Movie(db.Model):
     __tablename__ = 'movies'
