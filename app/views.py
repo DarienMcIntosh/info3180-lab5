@@ -76,6 +76,28 @@ def movies():
     # If the request is not a POST request, return method not allowed
     return jsonify({"error": "Method Not Allowed"}), 405
 
+# GET endpoint to retrieve all movies
+@app.route('/api/v1/movies', methods=['GET'])
+def get_movies():
+    movies = Movie.query.all()
+    movies_list = []
+    
+    for movie in movies:
+        movies_list.append({
+            "id": movie.id,
+            "title": movie.title,
+            "description": movie.description,
+            "poster": f"/api/v1/posters/{movie.poster}"
+        })
+    
+    return jsonify({"movies": movies_list})
+
+# Endpoint to serve poster images
+@app.route('/api/v1/posters/<filename>')
+def get_poster(filename):
+    upload_folder = os.path.join(os.getcwd(), 'uploads')
+    return send_file(os.path.join(upload_folder, filename))
+
 
 
 #CSRF token endpoint
